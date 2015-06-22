@@ -11,7 +11,15 @@ namespace MedSet.RESTAPI
 	{
 		public dynamic Process(NancyModule nancyModule, AuthenticateCallbackData model)
 		{
-			return "Yay, you're authenticated" + "Client: " + model.AuthenticatedClient + "Return URI: " + model.ReturnUrl + "Request: " ;
+			switch((string)nancyModule.Context.Request.Query.providerkey)
+			{
+				case "google":
+					return model.AuthenticatedClient.ToString();
+				case "facebook":
+					return "Sorry, facebook is not yet supported. Check again later.";
+				default:
+					return "No valid authentication provider found!!!";
+			}
 		}
 
 		public dynamic OnRedirectToAuthenticationProviderError(NancyModule nancyModule, string errorMessage)

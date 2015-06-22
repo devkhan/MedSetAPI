@@ -93,9 +93,12 @@
     <Compile Include="AccountModule.cs" />
     <Compile Include="APIModule.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="DatabaseContext.cs" />
+    <Compile Include="GoogleLinkedAccount.cs" />
     <Compile Include="IndexModule.cs" />
     <Compile Include="MedSetAuthenticationCallbackProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UserModel.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\index.sshtml">
