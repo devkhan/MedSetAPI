@@ -14,7 +14,8 @@ namespace MedSet.RESTAPI
 			switch((string)nancyModule.Context.Request.Query.providerkey)
 			{
 				case "google":
-					return model.AuthenticatedClient.ToString();
+					var googleLinkedAccount = new GoogleLinkedAccount(nancyModule, model);
+					return googleLinkedAccount.Respond().ToString();
 				case "facebook":
 					return "Sorry, facebook is not yet supported. Check again later.";
 				default:

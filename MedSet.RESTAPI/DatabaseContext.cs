@@ -1,4 +1,6 @@
-﻿using System;
+﻿#define DEBUG
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -21,7 +23,7 @@ namespace MedSet.RESTAPI
 			database = client.GetDatabase("medset");
 		}
 
-		public DatabaseContext Instance
+		public static DatabaseContext Instance
 		{
 			get
 			{
@@ -36,6 +38,10 @@ namespace MedSet.RESTAPI
 			var collection = database.GetCollection<UserModel>("users");
 
 			var result = collection.Find(p => p.UserId == UserId);
+
+			#if DEBUG
+				Debug.WriteLine(result);
+			#endif
 			return result.FirstAsync();
 		}
 
@@ -49,12 +55,39 @@ namespace MedSet.RESTAPI
 		public async Task<bool> UserExists(string UserId)
 		{
 			var collection = database.GetCollection<UserModel>("users");
-			var result = collection.Find(p => p.UserId == UserId);
-
+			var result = collection.Find<UserModel>(p => p.UserId == UserId);
+			
 			long count = 0;
 			try
 			{
-				count = await result.CountAsync();
+				result.CountAsync().ConfigureAwait(false);
+				count = result.CountAsync().Result;
+			}
+			catch (Exception e)
+			{
+				Debug.WriteLine("Oops! An error occured in UserExists(). Error: " + e.Message);
+				return false;
+			}
+			if (count == 0)
+			{
+				Debug.WriteLine("UserExists(): count == 0.");
+				return false;
+			}
+			else
+				Debug.WriteLine("UserExists(): count != 0.");
+				return true;
+		}
+
+		public async Task<bool> UserExists(string AuthProvider, string AuthID)
+		{
+			var collection = database.GetCollection<UserModel>("users");
+			var result = collection.Find<UserModel>(p => (p.AuthProvider == AuthProvider && p.AuthId == AuthID));
+			
+			long count = 0;
+			try
+			{
+				result.CountAsync().ConfigureAwait(false);
+				count = result.CountAsync().Result;
 			}
 			catch (Exception e)
 			{
@@ -63,9 +96,11 @@ namespace MedSet.RESTAPI
 			}
 			if (count == 0)
 			{
+				Debug.WriteLine("UserExists(): count == 0.");
 				return false;
 			}
 			else
+				Debug.WriteLine("UserExists(): count != 0.");
 				return true;
 		}
 
@@ -74,5 +109,7 @@ namespace MedSet.RESTAPI
 			var collection = database.GetCollection<UserModel>("users");
 			await collection.InsertOneAsync(user);
 		}
+
+		
 	}
 }
