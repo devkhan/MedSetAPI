@@ -110,6 +110,13 @@ namespace MedSet.RESTAPI
 			await collection.InsertOneAsync(user);
 		}
 
-		
+		public void ModifyUser(UserModel user)
+		{
+			var collection = database.GetCollection<UserModel>("users");
+			var filter = Builders<UserModel>.Filter.Eq("UserId", user.UserId);
+			var update = Builders<UserModel>.Update.Set("AuthToken", user.AuthToken);
+			collection.UpdateOneAsync(filter, update).ConfigureAwait(false);
+			collection.UpdateOneAsync(filter, update);
+		}
 	}
 }

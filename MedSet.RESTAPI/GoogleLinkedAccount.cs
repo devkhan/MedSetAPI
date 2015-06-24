@@ -34,21 +34,25 @@ namespace MedSet.RESTAPI
 				Debug.WriteLine("User exists, now retrieving user.");
 				var userTask = DatabaseContext.Instance.GetUser(model.AuthenticatedClient.ProviderName, model.AuthenticatedClient.UserInformation.Id);
 				UserModel user = userTask.Result;
-				if ((user.AuthToken.Value - DateTime.Now).Hours <24)
+				if (!Utils.Instance.TokenExpired(user.AuthToken.Value)) //IF the AuthToken is not expired.
 				{
-					var respone = new RegisterLoginModel(user.UserId, user.AuthToken.Key, (user.AuthToken.Value-DateTime.Now).Seconds);
+					// Retrieving existing AuthToken.
+					var respone = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value));
 					return JsonConvert.SerializeObject(respone);
 				}
 				else
 				{
-					// TO-DO: Updating AuthToken timestamp
+					// Updating AuthToken+Timestamp.
 					string token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-					var response = new RegisterLoginModel(user.UserId, token, 24 * 60 * 60);
+					user.AuthToken = new KeyValuePair<string, DateTime>(token, DateTime.Now);
+					DatabaseContext.Instance.ModifyUser(user);
+					var response = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value));
 					return JsonConvert.SerializeObject(response);
 				}
 			}
 			else
 			{
+				// Creating new user.
 				Debug.WriteLine("User doesn't exists, new user being created.");
 				UserModel newUser = new UserModel()
 				{
@@ -63,7 +67,7 @@ namespace MedSet.RESTAPI
 				{
 					user_id = newUser.UserId,
 					auth_token = newUser.AuthToken.Key,
-					seconds = 24*60*60
+					seconds = Utils.Instance.SecondsfromNow(newUser.AuthToken.Value)
 				};
 				return JsonConvert.SerializeObject(response);
 			}
