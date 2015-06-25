@@ -7,13 +7,17 @@ using System.Linq;
 using System.Web;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using MongoDB.Bson;
+using System.Net;
 
 namespace MedSet.RESTAPI
 {
 	public class GoogleLinkedAccount
 	{
 		private NancyModule nancyModule;
-		private AuthenticateCallbackData model;		
+		private AuthenticateCallbackData model;
+		private LoginRequestModel loginRequestModel;
+		public static string TOKENINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v3/tokeninfo";
 
 		public GoogleLinkedAccount(NancyModule nancyModule, AuthenticateCallbackData model)
 		{
@@ -21,10 +25,15 @@ namespace MedSet.RESTAPI
 			this.nancyModule = nancyModule;
 		}
 
+		public GoogleLinkedAccount(LoginRequestModel loginRequestModel)
+		{
+			this.loginRequestModel = loginRequestModel;
+		}
+
 		public dynamic Respond()
 		{
 			var task = DatabaseContext.Instance.UserExists(model.AuthenticatedClient.ProviderName,
-			model.AuthenticatedClient.UserInformation.Id);
+			model.AuthenticatedClient.UserInformation.Email);
 			// task.RunSynchronously(); // Causing Exception.
 			task.ConfigureAwait(false);
 			var result = task.Result;
@@ -32,7 +41,7 @@ namespace MedSet.RESTAPI
 			if (result)
 			{
 				Debug.WriteLine("User exists, now retrieving user.");
-				var userTask = DatabaseContext.Instance.GetUser(model.AuthenticatedClient.ProviderName, model.AuthenticatedClient.UserInformation.Id);
+				var userTask = DatabaseContext.Instance.GetUser(model.AuthenticatedClient.ProviderName, model.AuthenticatedClient.UserInformation.Email);
 				UserModel user = userTask.Result;
 				if (!Utils.Instance.TokenExpired(user.AuthToken.Value)) //IF the AuthToken is not expired.
 				{
@@ -58,7 +67,7 @@ namespace MedSet.RESTAPI
 				{
 					UserId = Guid.NewGuid().ToString(),
 					AuthProvider = model.AuthenticatedClient.ProviderName,
-					AuthId = model.AuthenticatedClient.UserInformation.Id,
+					AuthId = model.AuthenticatedClient.UserInformation.Email,
 					AuthToken = new KeyValuePair<string,DateTime>(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), DateTime.Now.AddDays(1))
 				};
 				Debug.WriteLine(newUser);
@@ -71,6 +80,38 @@ namespace MedSet.RESTAPI
 				};
 				return JsonConvert.SerializeObject(response);
 			}
+		}
+
+		public string ValidateToken()
+		{
+			string response = String.Empty;
+			WebRequest req = System.Net.WebRequest.Create(TOKENINFO_ENDPOINT + "?id_token=" + loginRequestModel.id_token);
+			try
+			{
+				WebResponse resp = req.GetResponse();
+				using (System.IO.Stream stream = resp.GetResponseStream())
+				{
+					using (System.IO.StreamReader streamReader = new System.IO.StreamReader(stream))
+					{
+						response = streamReader.ReadToEnd();
+						streamReader.Close();
+					}
+				}
+			}
+			catch (ArgumentException ex)
+			{
+				throw new CustomException("HTTP_ERROR :: The second HttpWebRequest object has raised an Argument Exception as 'Connection' Property is set to 'Close' ::", ex);
+			}
+			catch (WebException ex)
+			{
+				throw new CustomException("HTTP_ERROR :: WebException raised! ::", ex);
+			}
+			catch (Exception ex)
+			{
+				throw new CustomException("HTTP_ERROR :: Exception raised! ::", ex);
+			}
+
+			return response;
 		}
 	}
 }
