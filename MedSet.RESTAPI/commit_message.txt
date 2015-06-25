@@ -1,0 +1,4 @@
+﻿CustomException + LoginRequestModel added
+
+CustomException for modifying exception and rethrowing it.
+MoginRequestModel for binding login requests to something.

@@ -22,8 +22,41 @@ namespace MedSet.RESTAPI
 		public string AuthId { get; set; }
 		// Authorization code provided by the our app along with timestamp.
 		public KeyValuePair<string, DateTime> AuthToken { get; set; }
+		// Code returned by OAuth provider.
+		public string Code { get; set; }
+
+		/// <summary>
+		/// Contains personal information collected from external auth provider API and as given by user.
+		/// 
+		/// Keys			-	Type
+		/// =================================
+		/// FirstName			string
+		/// MiddleName			string
+		/// LastName			string
+		/// Gender				enum Utils.Gender
+		/// DOB					DateTime
+		/// Address				string
+		/// City				string
+		/// State				string
+		/// Country				string
+		/// Pincode				int
+		/// Mobile				string
+		/// EMailID				string/EmailID
+		/// 
+		/// </summary>
 		public Dictionary<string, BsonValue> PersonalDetails { get; set; }
+
+		/// <summary>
+		/// Contains information related to health as given by the user.
+		/// 
+		/// Keys			-	Type
+		/// =================================
+		/// Diabetic			bool
+		/// HeartPatient		bool
+		/// 
+		/// </summary>
 		public Dictionary<string, BsonValue> MedicalDetails { get; set; }
+		
 
 	}
 }

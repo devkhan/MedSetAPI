@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using System.Diagnostics;
 using MongoDB.Bson;
 using System.Net;
+using System.IO;
 
 namespace MedSet.RESTAPI
 {
@@ -34,8 +35,7 @@ namespace MedSet.RESTAPI
 		{
 			var task = DatabaseContext.Instance.UserExists(model.AuthenticatedClient.ProviderName,
 			model.AuthenticatedClient.UserInformation.Email);
-			// task.RunSynchronously(); // Causing Exception.
-			task.ConfigureAwait(false);
+			task.ConfigureAwait(false); // For running async methods synchronously.
 			var result = task.Result;
 			Debug.WriteLine("UserExists: " + result);
 			if (result)
@@ -84,14 +84,16 @@ namespace MedSet.RESTAPI
 
 		public string ValidateToken()
 		{
-			string response = String.Empty;
-			WebRequest req = System.Net.WebRequest.Create(TOKENINFO_ENDPOINT + "?id_token=" + loginRequestModel.id_token);
+			String response = String.Empty;
+			Uri uri = new Uri(TOKENINFO_ENDPOINT + "?id_token=" + loginRequestModel.id_token);
+			WebRequest req = WebRequest.Create(uri);
+			WebResponse resp;
 			try
 			{
-				WebResponse resp = req.GetResponse();
-				using (System.IO.Stream stream = resp.GetResponseStream())
+				resp = req.GetResponse();
+				using (Stream stream = resp.GetResponseStream())
 				{
-					using (System.IO.StreamReader streamReader = new System.IO.StreamReader(stream))
+					using (StreamReader streamReader = new StreamReader(stream))
 					{
 						response = streamReader.ReadToEnd();
 						streamReader.Close();
@@ -104,6 +106,7 @@ namespace MedSet.RESTAPI
 			}
 			catch (WebException ex)
 			{
+				Debug.WriteLine("Request URI: " + req.RequestUri);
 				throw new CustomException("HTTP_ERROR :: WebException raised! ::", ex);
 			}
 			catch (Exception ex)
@@ -112,6 +115,77 @@ namespace MedSet.RESTAPI
 			}
 
 			return response;
+		}
+
+		public dynamic RespondToIDToken()
+		{
+			BsonDocument tokeninfo;
+			try
+			{
+				tokeninfo = BsonDocument.Parse(ValidateToken());
+				Debug.WriteLine("Response from Google tokeninfo endpoint: " + tokeninfo);
+			}
+			catch (Exception ex)
+			{
+				return "Oops, an error occured. Details: " + ex.Message;
+			}
+			if (tokeninfo.Contains("error_description"))
+			{
+				// ID token invalid.
+				return new BsonDocument{
+					{"status", "error"},
+					{"description", "Invalid ID token"}
+				};
+			}
+			else if (tokeninfo["email"]!=loginRequestModel.auth_id)
+			{
+				// Email provided by the client and auth provider doesn't match.
+				return new BsonDocument{
+					{"status", "error"},
+					{"description", "Email ID mismatch"}
+				};
+			}
+			else
+			{
+				var task = DatabaseContext.Instance.UserExists(loginRequestModel.auth_provider,loginRequestModel.auth_id);
+				task.ConfigureAwait(false); // For running async methods synchronously.
+				var result = task.Result;
+				Debug.WriteLine("UserExists: " + result);
+				if (result)
+				{
+					Debug.WriteLine("User exists, now retrieving user.");
+					var userTask = DatabaseContext.Instance.GetUser(loginRequestModel.auth_provider, loginRequestModel.auth_id);
+					UserModel user = userTask.Result;
+					// Updating AuthToken+Timestamp.
+					string token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+					user.AuthToken = new KeyValuePair<string, DateTime>(token, DateTime.Now);
+					DatabaseContext.Instance.ModifyUser(user);
+					var response = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value));
+					return JsonConvert.SerializeObject(response);
+				}
+				else
+				{
+					// Creating new user.
+					Debug.WriteLine("User doesn't exists, new user being created.");
+					UserModel newUser = new UserModel()
+					{
+						UserId = Guid.NewGuid().ToString(),
+						AuthProvider = loginRequestModel.auth_provider,
+						AuthId = loginRequestModel.auth_id,
+						Code = loginRequestModel.id_token,
+						AuthToken = new KeyValuePair<string, DateTime>(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), DateTime.Now.AddDays(1))
+					};
+					Debug.WriteLine(newUser);
+					DatabaseContext.Instance.AddUser(newUser);
+					var response = new RegisterLoginModel()
+					{
+						user_id = newUser.UserId,
+						auth_token = newUser.AuthToken.Key,
+						seconds = Utils.Instance.SecondsfromNow(newUser.AuthToken.Value)
+					};
+					return JsonConvert.SerializeObject(response);
+				}
+			}
 		}
 	}
 }

@@ -5,6 +5,7 @@ using System.Web;
 
 namespace MedSet.RESTAPI
 {
+	[Serializable]
 	public class LoginRequestModel
 	{
 		// This will be the ID token provided by the client app retrieved from

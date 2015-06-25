@@ -22,6 +22,14 @@ namespace MedSet.RESTAPI
 		{
 		}
 
+		public override string Message
+		{
+			get
+			{
+				return this.Message + base.Message;
+			}
+		}
+
 		//...other constructors with parametrized messages for localization if needed
 	}
 }
