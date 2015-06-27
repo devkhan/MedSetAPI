@@ -54,7 +54,7 @@ namespace MedSet.RESTAPI
 					// Updating AuthToken+Timestamp.
 					string token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
 					user.AuthToken = new KeyValuePair<string, DateTime>(token, DateTime.Now);
-					DatabaseContext.Instance.ModifyUser(user);
+					DatabaseContext.Instance.UpdateAuthToken(user);
 					var response = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value));
 					return JsonConvert.SerializeObject(response);
 				}
@@ -160,7 +160,7 @@ namespace MedSet.RESTAPI
 					// Updating AuthToken+Timestamp.
 					string token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
 					user.AuthToken = new KeyValuePair<string, DateTime>(token, DateTime.Now);
-					DatabaseContext.Instance.ModifyUser(user);
+					DatabaseContext.Instance.UpdateAuthToken(user);
 					var response = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value));
 					return JsonConvert.SerializeObject(response);
 				}
