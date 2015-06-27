@@ -28,7 +28,8 @@ namespace MedSet.RESTAPI
 					{
 						auth_id = this.Request.Form["auth_id"],
 						auth_provider = this.Request.Form["auth_provider"],
-						id_token = this.Request.Form["id_token"]
+						id_token = this.Request.Form["id_token"],
+						server_auth_code = this.Request.Form["server_auth_code"]
 					};
 					var googleLinkedModel = new GoogleLinkedAccount(signinRequestBody);
 					try

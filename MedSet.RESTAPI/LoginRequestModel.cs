@@ -15,5 +15,8 @@ namespace MedSet.RESTAPI
 		public string auth_provider { get; set; }
 		// Auth ID for searching in our database. Email Id in our case.
 		public string auth_id { get; set; }
+		// Server Auth Code for accessing Google API even when the user is not
+		// using our app.
+		public string server_auth_code { get; set; }
 	}
 }

@@ -123,6 +123,7 @@ namespace MedSet.RESTAPI
 			try
 			{
 				tokeninfo = BsonDocument.Parse(ValidateToken());
+				loginRequestModel.auth_id = (string)tokeninfo["email"];
 				Debug.WriteLine("Response from Google tokeninfo endpoint: " + tokeninfo);
 			}
 			catch (Exception ex)
@@ -137,7 +138,7 @@ namespace MedSet.RESTAPI
 					{"description", "Invalid ID token"}
 				};
 			}
-			else if (tokeninfo["email"]!=loginRequestModel.auth_id)
+			else if ((string)tokeninfo["email"]!=loginRequestModel.auth_id)
 			{
 				// Email provided by the client and auth provider doesn't match.
 				return new BsonDocument{
