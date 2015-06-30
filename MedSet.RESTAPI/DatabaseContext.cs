@@ -17,15 +17,30 @@ namespace MedSet.RESTAPI
 {
 	public class DatabaseContext
 	{
+		/// <summary>
+		/// The instance
+		/// </summary>
 		private static DatabaseContext instance;
+		/// <summary>
+		/// The database
+		/// </summary>
 		private static IMongoDatabase database;
-		
+
+		/// <summary>
+		/// Prevents a default instance of the <see cref="DatabaseContext"/> class from being created.
+		/// </summary>
 		private DatabaseContext()
 		{
 			var client = new MongoClient("mongodb://localhost:27017");
 			database = client.GetDatabase("medset");
 		}
 
+		/// <summary>
+		/// Gets the instance.
+		/// </summary>
+		/// <value>
+		/// The instance.
+		/// </value>
 		public static DatabaseContext Instance
 		{
 			get
@@ -36,6 +51,11 @@ namespace MedSet.RESTAPI
 			}
 		}
 
+		/// <summary>
+		/// Gets the user.
+		/// </summary>
+		/// <param name="UserId">The user identifier.</param>
+		/// <returns></returns>
 		public UserModel GetUser(string UserId)
 		{
 			var collection = database.GetCollection<UserModel>("users");
@@ -46,6 +66,12 @@ namespace MedSet.RESTAPI
 			return result.FirstAsync().Result;
 		}
 
+		/// <summary>
+		/// Gets the user.
+		/// </summary>
+		/// <param name="AuthProvider">The authentication provider.</param>
+		/// <param name="AuthID">The authentication identifier.</param>
+		/// <returns></returns>
 		public Task<UserModel> GetUser(string AuthProvider, string AuthID)
 		{
 			var collection = database.GetCollection<UserModel>("users");
@@ -53,6 +79,11 @@ namespace MedSet.RESTAPI
 			return result.FirstAsync();
 		}
 
+		/// <summary>
+		/// Users the exists.
+		/// </summary>
+		/// <param name="UserId">The user identifier.</param>
+		/// <returns></returns>
 		public bool UserExists(string UserId)
 		{
 			var collection = database.GetCollection<UserModel>("users");
@@ -79,6 +110,12 @@ namespace MedSet.RESTAPI
 				return true;
 		}
 
+		/// <summary>
+		/// Users the exists.
+		/// </summary>
+		/// <param name="AuthProvider">The authentication provider.</param>
+		/// <param name="AuthID">The authentication identifier.</param>
+		/// <returns></returns>
 		public async Task<bool> UserExists(string AuthProvider, string AuthID)
 		{
 			var collection = database.GetCollection<UserModel>("users");
@@ -105,12 +142,20 @@ namespace MedSet.RESTAPI
 				return true;
 		}
 
+		/// <summary>
+		/// Adds the user.
+		/// </summary>
+		/// <param name="user">The user.</param>
 		public async void AddUser(UserModel user)
 		{
 			var collection = database.GetCollection<UserModel>("users");
 			await collection.InsertOneAsync(user);
 		}
 
+		/// <summary>
+		/// Updates the authentication token.
+		/// </summary>
+		/// <param name="user">The user.</param>
 		public void UpdateAuthToken(UserModel user)
 		{
 			var collection = database.GetCollection<UserModel>("users");
@@ -120,6 +165,11 @@ namespace MedSet.RESTAPI
 			collection.UpdateOneAsync(filter, update);
 		}
 
+		/// <summary>
+		/// Gets the reports.
+		/// </summary>
+		/// <param name="UserId">The user identifier.</param>
+		/// <returns></returns>
 		public List<ReportModel> GetReports(string UserId)
 		{
 			var collection = database.GetCollection<ReportModel>("reports");
@@ -128,7 +178,12 @@ namespace MedSet.RESTAPI
 			return result;
 		}
 
-		public bool AddReport(ReportModel report)
+		/// <summary>
+		/// Adds the report.
+		/// </summary>
+		/// <param name="report">The report.</param>
+		/// <returns></returns>
+		public bool AddReport(ref ReportModel report)
 		{
 			if (UserExists(report.UserId))
 			{
@@ -148,6 +203,11 @@ namespace MedSet.RESTAPI
 			}
 		}
 
+		/// <summary>
+		/// Modifies the report.
+		/// </summary>
+		/// <param name="report">The report.</param>
+		/// <returns></returns>
 		public bool ModifyReport(ReportModel report)
 		{
 			if (ReportExists(report.ReportID))
@@ -166,6 +226,11 @@ namespace MedSet.RESTAPI
 			}
 		}
 
+		/// <summary>
+		/// Reports the exists.
+		/// </summary>
+		/// <param name="ReportID">The report identifier.</param>
+		/// <returns></returns>
 		public bool ReportExists(string ReportID)
 		{
 			var collection = database.GetCollection<ReportModel>("reports");
@@ -192,6 +257,12 @@ namespace MedSet.RESTAPI
 			return true;
 		}
 
+		/// <summary>
+		/// Tokens the valid.
+		/// </summary>
+		/// <param name="UserId">The user identifier.</param>
+		/// <param name="access_token">The access_token.</param>
+		/// <returns></returns>
 		public bool TokenValid(string UserId, string access_token)
 		{
 			if (UserExists(UserId))
@@ -207,6 +278,21 @@ namespace MedSet.RESTAPI
 				}
 			}
 			return false;
+		}
+
+		/// <summary>
+		/// Gets the report.
+		/// </summary>
+		/// <param name="ReportID">The report identifier.</param>
+		/// <returns></returns>
+		public ReportModel GetReport(string ReportID)
+		{
+			var collection = database.GetCollection<ReportModel>("reports");
+
+			var result = collection.Find(p => p.ReportID == ReportID);
+
+			result.FirstAsync().ConfigureAwait(false);
+			return result.FirstAsync().Result;
 		}
 	}
 }

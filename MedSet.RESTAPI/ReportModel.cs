@@ -12,8 +12,9 @@ namespace MedSet.RESTAPI
 		public ObjectId _id { get; set; }
 
 		// Unique report ID.
-		[Required]
+		
 		public string ReportID { get; set; }
+		[Required]
 		public string UserId { get; set; }
 		// Report title.
 		public string Title { get; set; }
@@ -23,8 +24,9 @@ namespace MedSet.RESTAPI
 		// Report type.
 		public ReportType Type { get; set; }
 		// Main report data - pdf file, image file, text data.
-		public string data { get; set; }
-
+		//public List<string> data { get; set; }
+		// Number of files the user wish to upload.
+		public int FilesNumber { get; set; }
 		// Report type.
 		public enum ReportType
 		{
