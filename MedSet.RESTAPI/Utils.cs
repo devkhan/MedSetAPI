@@ -9,7 +9,7 @@ namespace MedSet.RESTAPI
 {
 	public class Utils
 	{
-		private static FileStream F = new FileStream(@"E:\Git\MedSetAPI\MedSet.RESTAPI\debug_log.txt", FileMode.Open, FileAccess.Read, FileShare.Read);
+		private static FileStream F = new FileStream(@"E:\Git\MedSetAPI\MedSet.RESTAPI\debug_log.txt", FileMode.OpenOrCreate, FileAccess.Write);
 		/// <summary>
 		/// The fil e_ bas e_ path
 		/// </summary>
@@ -54,7 +54,7 @@ namespace MedSet.RESTAPI
 		/// <returns></returns>
 		public bool TokenExpired(DateTime dateTime)
 		{
-			return (SecondsfromNow(dateTime) <= 0) ? true : false;
+			return (SecondsfromNow(dateTime) <= -(24*60*60)) ? true : false;
 		}
 
 		/// <summary>
