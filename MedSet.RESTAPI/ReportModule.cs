@@ -46,7 +46,8 @@ namespace MedSet.RESTAPI
 			Post["/{user_id:guid}/reports/add"] = parameters =>
 				{
 					dynamic request = JsonConvert.DeserializeObject(this.Request.Body.AsString());
-					if (DatabaseContext.Instance.TokenValid((string)parameters.user_id, (string)request.access_token))
+					var access_token = Request.Headers.Authorization.Split(' ')[1];
+					if (DatabaseContext.Instance.TokenValid((string)parameters.user_id, access_token))
 					{
 						var reportModel = new ReportModel
 						{
@@ -82,7 +83,7 @@ namespace MedSet.RESTAPI
 					{
 						if (DatabaseContext.Instance.ReportExists(parameters.report_id))
 						{
-							if (DatabaseContext.Instance.GetReport(parameters.report_id).FilesNumber>parameters.file && parameters.file>0)
+							if (DatabaseContext.Instance.GetReport(parameters.report_id).FilesNumber>parameters.file && parameters.file>=0)
 							{
 								// Recieve uploaded file and save it somewhere
 								// on the disk with a properly formatted path.

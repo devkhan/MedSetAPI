@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson;
 using Nancy;
 using Nancy.ModelBinding;
+using Nancy.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +42,16 @@ namespace MedSet.RESTAPI
 						return ("Oops, an error occured. Details: " + ex.Message);
 					}
 
+				};
+
+			Get["/refreshtokencallback"] = _ =>
+				{
+					return this.Request.Body.AsString();
+				};
+
+			Post["/refreshtokencallback"] = _ =>
+				{
+					return this.Request.Body.AsString();
 				};
 		}
 	}

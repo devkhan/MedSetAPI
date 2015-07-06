@@ -10,6 +10,7 @@ using System.Diagnostics;
 using MongoDB.Bson;
 using System.Net;
 using System.IO;
+using System.Collections.Specialized;
 
 namespace MedSet.RESTAPI
 {
@@ -18,8 +19,8 @@ namespace MedSet.RESTAPI
 		private NancyModule nancyModule;
 		private AuthenticateCallbackData model;
 		private LoginRequestModel loginRequestModel;
-		public static string TOKENINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v3/tokeninfo";
-
+		public static string TOKENINFO_ENDPOINT = @"https://www.googleapis.com/oauth2/v3/tokeninfo";
+		public static string REFRESHTOKEN_ENDPOINT = @"https://www.googleapis.com/oauth2/v3/token";
 		public GoogleLinkedAccount(NancyModule nancyModule, AuthenticateCallbackData model)
 		{
 			this.model = model;
@@ -84,6 +85,8 @@ namespace MedSet.RESTAPI
 
 		public string ValidateToken()
 		{
+			// Below code check the ID token against the Google servers for
+			// verification of user.
 			String response = String.Empty;
 			Uri uri = new Uri(TOKENINFO_ENDPOINT + "?id_token=" + loginRequestModel.id_token);
 			WebRequest req = WebRequest.Create(uri);
@@ -99,6 +102,7 @@ namespace MedSet.RESTAPI
 						streamReader.Close();
 					}
 				}
+
 			}
 			catch (ArgumentException ex)
 			{
@@ -114,14 +118,67 @@ namespace MedSet.RESTAPI
 				throw new CustomException("HTTP_ERROR :: Exception raised! ::", ex);
 			}
 
+			
 			return response;
 		}
 
+		public void SaveRefreshToken()
+		{
+			// Code for exchanging auth code for refresh token. The result of
+			// the following request is recieved at the redirect uri's.
+			Uri uri = new Uri(REFRESHTOKEN_ENDPOINT);
+			HttpWebRequest req = (HttpWebRequest)WebRequest.Create(uri);
+			WebResponse resp;
+			req.Method = "POST";
+			req.ContentType = "application/x-www-form-urlencoded";
+			NameValueCollection outgoingQueryString = HttpUtility.ParseQueryString(String.Empty);
+			outgoingQueryString.Add("code", loginRequestModel.server_auth_code);
+			outgoingQueryString.Add("client_id", "870300371040-242h9v895pnjmq7ps97tacss0nn4ple3.apps.googleusercontent.com");
+			outgoingQueryString.Add("client_secret", "jo8kn0v0kavKEsMmj3zDNZGH");
+			outgoingQueryString.Add("redirect_uri", @"urn:ietf:wg:oauth:2.0:oob");
+			outgoingQueryString.Add("grant_type", "authorization_code");
+			string postdata = outgoingQueryString.ToString();
+			req.GetRequestStream().Write(System.Text.Encoding.ASCII.GetBytes(postdata), 0, System.Text.Encoding.ASCII.GetBytes(postdata).Length);
+			
+			string result = String.Empty;
+			try
+			{
+				resp = req.GetResponse();
+				using (Stream stream = resp.GetResponseStream())
+				{
+					using (StreamReader streamReader = new StreamReader(stream))
+					{
+						result = streamReader.ReadToEnd();
+						streamReader.Close();
+					}
+				}
+
+			}
+			catch (ArgumentException ex)
+			{
+				throw new CustomException("HTTP_ERROR :: The second HttpWebRequest object has raised an Argument Exception as 'Connection' Property is set to 'Close' ::", ex);
+			}
+			catch (WebException ex)
+			{
+
+				throw new CustomException("HTTP_ERROR :: WebException raised! ::", ex);
+			}
+			catch (Exception ex)
+			{
+				throw new CustomException("HTTP_ERROR :: Exception raised! ::", ex);
+			}
+			finally
+			{
+				loginRequestModel.server_auth_code = (string)BsonDocument.Parse(result)["refresh_token"];
+			}
+
+		}
 		public dynamic RespondToIDToken()
 		{
 			BsonDocument tokeninfo;
 			try
 			{
+				SaveRefreshToken();
 				tokeninfo = BsonDocument.Parse(ValidateToken());
 				loginRequestModel.auth_id = (string)tokeninfo["email"];
 				Debug.WriteLine("Response from Google tokeninfo endpoint: " + tokeninfo);
@@ -173,8 +230,9 @@ namespace MedSet.RESTAPI
 						UserId = Guid.NewGuid().ToString(),
 						AuthProvider = loginRequestModel.auth_provider,
 						AuthId = loginRequestModel.auth_id,
-						Code = loginRequestModel.id_token,
-						AuthToken = new KeyValuePair<string, DateTime>(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), DateTime.Now.AddDays(1))
+						IdToken = loginRequestModel.id_token,
+						AuthToken = new KeyValuePair<string, DateTime>(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), DateTime.Now.AddDays(1)),
+						AuthCode = loginRequestModel.server_auth_code
 					};
 					Debug.WriteLine(newUser);
 					DatabaseContext.Instance.AddUser(newUser);
