@@ -8,11 +8,23 @@ using Newtonsoft.Json;
 using Nancy.Extensions;
 using System.IO;
 using Nancy.IO;
+using System.Text.RegularExpressions;
 
 namespace MedSet.RESTAPI
 {
 	public class ReportModule : NancyModule
 	{
+
+		/// <summary>
+		/// Flag for checking if the client if currently authenticated and authorized.
+		/// </summary>
+		protected bool Authorized = false;
+
+		/// <summary>
+		/// Denotes the current status of the request processing.
+		/// </summary>
+		protected HttpStatusCode CurrentStatus = HttpStatusCode.OK;
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="ReportModule"/> class.
 		/// </summary>
@@ -28,7 +40,7 @@ namespace MedSet.RESTAPI
 						return Response.AsJson(new Dictionary<string, object>
 							{
 								{"status", "fine"},
-								{"reports", JsonConvert.SerializeObject(reports)}
+								{"reports", reports}
 							},
 							HttpStatusCode.OK);
 					}
@@ -99,7 +111,7 @@ namespace MedSet.RESTAPI
 									Request.Body.CopyTo(fileStream);
 									return Response.AsJson(new Dictionary<string, object>
 										{
-											{"Status", "ok"},
+											{"status", "ok"},
 											{"description", "image uploaded succesfully"}
 										});
 								}
@@ -164,6 +176,41 @@ namespace MedSet.RESTAPI
 					}
 				};
 					
+		}
+
+		protected void Authorize(DynamicDictionary parameters)
+		{
+			if (!DatabaseContext.Instance.UserExists((string)parameters["user_id"]))
+			{
+				CurrentStatus = HttpStatusCode.NotFound;
+				Authorized = false;
+				return;
+			}
+			if (!(Request.Headers.Keys.Contains("Authorization")))
+			{
+				CurrentStatus = HttpStatusCode.Unauthorized;
+				Authorized = false;
+				return;
+			}
+			try
+			{
+				var access_token = Request.Headers.Authorization.Split(' ')[1];
+				if (!DatabaseContext.Instance.TokenValid((string)parameters["user_id"], access_token))
+				{
+					CurrentStatus = HttpStatusCode.Unauthorized;
+					Authorized = false;
+					return;
+				}
+			}
+			catch (IndexOutOfRangeException exception)
+			{
+				CurrentStatus = HttpStatusCode.Unauthorized;
+				Authorized = false;
+				return;
+			}
+			CurrentStatus = HttpStatusCode.OK;
+			Authorized = true;
+			return;
 		}
 	}
 }
