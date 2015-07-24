@@ -20,7 +20,7 @@ namespace MedSet.RESTAPI
 		public string Title { get; set; }
 		// Timestamp of the report.
 		[Required]
-		public DateTime Timestamp { get; set; }
+		public long Timestamp { get; set; }
 		// Report type.
 		public ReportType Type { get; set; }
 		// Main report data - pdf file, image file, text data.

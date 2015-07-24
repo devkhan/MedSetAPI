@@ -30,7 +30,7 @@ namespace MedSet.RESTAPI
 		public string IdToken { get; set; }
 
 		// Authorization code provided by the our app along with timestamp.
-		public KeyValuePair<string, DateTime> AuthToken { get; set; }
+		public KeyValuePair<string, long> AuthToken { get; set; }
 
 
 		/// <summary>

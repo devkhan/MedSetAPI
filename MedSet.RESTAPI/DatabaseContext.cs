@@ -268,7 +268,7 @@ namespace MedSet.RESTAPI
 			if (UserExists(UserId))
 			{
 				var user = GetUser(UserId);
-				if (user.AuthToken.Key == access_token && !Utils.Instance.TokenExpired(user.AuthToken.Value))
+				if (user.AuthToken.Key == access_token && !Utils.Instance.TokenExpired(user.AuthToken.Value.ToDateTimeFromEpoch()))
 				{
 					return true;
 				}

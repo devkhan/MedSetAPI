@@ -44,19 +44,19 @@ namespace MedSet.RESTAPI
 				Debug.WriteLine("User exists, now retrieving user.");
 				var userTask = DatabaseContext.Instance.GetUser(model.AuthenticatedClient.ProviderName, model.AuthenticatedClient.UserInformation.Email);
 				UserModel user = userTask.Result;
-				if (!Utils.Instance.TokenExpired(user.AuthToken.Value)) //IF the AuthToken is not expired.
+				if (!Utils.Instance.TokenExpired(user.AuthToken.Value.ToDateTimeFromEpoch())) //IF the AuthToken is not expired.
 				{
 					// Retrieving existing AuthToken.
-					var respone = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value));
+					var respone = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value.ToDateTimeFromEpoch()));
 					return JsonConvert.SerializeObject(respone);
 				}
 				else
 				{
 					// Updating AuthToken+Timestamp.
 					string token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-					user.AuthToken = new KeyValuePair<string, DateTime>(token, DateTime.Now);
+					user.AuthToken = new KeyValuePair<string, long>(token, DateTime.Now.ToEpochTime());
 					DatabaseContext.Instance.UpdateAuthToken(user);
-					var response = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value));
+					var response = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value.ToDateTimeFromEpoch()));
 					return JsonConvert.SerializeObject(response);
 				}
 			}
@@ -69,7 +69,7 @@ namespace MedSet.RESTAPI
 					UserId = Guid.NewGuid().ToString(),
 					AuthProvider = model.AuthenticatedClient.ProviderName,
 					AuthId = model.AuthenticatedClient.UserInformation.Email,
-					AuthToken = new KeyValuePair<string,DateTime>(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), DateTime.Now.AddDays(1))
+					AuthToken = new KeyValuePair<string,long>(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), DateTime.Now.AddDays(1).ToEpochTime())
 				};
 				Debug.WriteLine(newUser);
 				DatabaseContext.Instance.AddUser(newUser);
@@ -77,7 +77,7 @@ namespace MedSet.RESTAPI
 				{
 					user_id = newUser.UserId,
 					auth_token = newUser.AuthToken.Key,
-					seconds = Utils.Instance.SecondsfromNow(newUser.AuthToken.Value)
+					seconds = Utils.Instance.SecondsfromNow(newUser.AuthToken.Value.ToDateTimeFromEpoch())
 				};
 				return JsonConvert.SerializeObject(response);
 			}
@@ -216,9 +216,9 @@ namespace MedSet.RESTAPI
 					UserModel user = userTask.Result;
 					// Updating AuthToken+Timestamp.
 					string token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-					user.AuthToken = new KeyValuePair<string, DateTime>(token, DateTime.Now);
+					user.AuthToken = new KeyValuePair<string, long>(token, DateTime.Now.ToEpochTime());
 					DatabaseContext.Instance.UpdateAuthToken(user);
-					var response = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value));
+					var response = new RegisterLoginModel(user.UserId, user.AuthToken.Key, Utils.Instance.SecondsfromNow(user.AuthToken.Value.ToDateTimeFromEpoch()));
 					return JsonConvert.SerializeObject(response);
 				}
 				else
@@ -231,7 +231,7 @@ namespace MedSet.RESTAPI
 						AuthProvider = loginRequestModel.auth_provider,
 						AuthId = loginRequestModel.auth_id,
 						IdToken = loginRequestModel.id_token,
-						AuthToken = new KeyValuePair<string, DateTime>(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), DateTime.Now.AddDays(1)),
+						AuthToken = new KeyValuePair<string, long>(Convert.ToBase64String(Guid.NewGuid().ToByteArray()), DateTime.Now.AddDays(1).ToEpochTime()),
 						AuthCode = loginRequestModel.server_auth_code
 					};
 					Debug.WriteLine(newUser);
@@ -240,7 +240,7 @@ namespace MedSet.RESTAPI
 					{
 						user_id = newUser.UserId,
 						auth_token = newUser.AuthToken.Key,
-						seconds = Utils.Instance.SecondsfromNow(newUser.AuthToken.Value)
+						seconds = Utils.Instance.SecondsfromNow(newUser.AuthToken.Value.ToDateTimeFromEpoch())
 					};
 					return JsonConvert.SerializeObject(response);
 				}

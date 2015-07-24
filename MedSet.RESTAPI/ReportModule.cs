@@ -64,8 +64,8 @@ namespace MedSet.RESTAPI
 						var reportModel = new ReportModel
 						{
 							UserId = (String)parameters.user_id,
-							Title = request.report.title,
-							Timestamp = DateTime.Now,
+							Title = request.report.Title,
+							Timestamp = request.report.Timestamp,
 							Type = (ReportModel.ReportType)Enum.Parse(typeof(ReportModel.ReportType), (string)request.report.Type, true),
 							FilesNumber = request.report.FilesNumber
 						};
