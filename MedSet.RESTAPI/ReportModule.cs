@@ -88,7 +88,7 @@ namespace MedSet.RESTAPI
 					HttpStatusCode.Unauthorized);
 				};
 
-			Put["/{user_id:guid}/reports/{report_id}/{file:int}"] = parameters =>
+			Post["/{user_id:guid}/reports/{report_id}/{file:int}"] = parameters =>
 				{
 					var access_token = Request.Headers.Authorization.Split(' ')[1];
 					if (DatabaseContext.Instance.TokenValid((string)parameters.user_id, (string)access_token))
